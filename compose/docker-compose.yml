@@ -1,0 +1,86 @@
+version: "3.4"
+
+#Services
+services:
+   postgis:
+    image: mdillon/postgis:latest
+    container_name: ${_REPOSITORY_NAME}_postgis
+    restart: unless-stopped
+    privileged: true
+    tty: true
+    ports:
+      - "10050:5432"
+    volumes:
+      - ./volumes/_postgis:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Temporal12345
+      SERVICE_TAGS: dev
+      SERVICE_NAME: postgres
+      DB_HOST: ${_REPOSITORY_NAME}_postgis
+    networks:
+      - app-network
+
+   db:
+    image: postgres:9.6
+    container_name: ${_REPOSITORY_NAME}_db
+    restart: unless-stopped
+    privileged: true
+    tty: true
+    ports:
+      - "10051:5432"
+    volumes:
+      - ./volumes/_database:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Temporal12345
+      SERVICE_TAGS: dev
+      SERVICE_NAME: postgres
+      DB_HOST: ${_REPOSITORY_NAME}_db
+    networks:
+      - app-network
+
+
+   app:
+    container_name: ${_REPOSITORY_NAME}_app
+    image: biketrip/centos_python:3_latest_3.6.8
+    privileged: true
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: ${_REPOSITORY_NAME}_app
+      SERVICE_TAGS: dev
+    working_dir: /var/www/html
+    ports:
+      - "10052:8000"
+    volumes:
+      - ./volumes/_app/backend/prj1:/var/www/html/prj1
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+   #service Web Reactjs
+   web:
+    container_name: ${_REPOSITORY_NAME}_web
+    image: biketrip/centos_node_react:6_latest_6.17.1
+    privileged: true
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: ${_REPOSITORY_NAME}_web
+      SERVICE_TAGS: dev
+    working_dir: /var/www/html
+    ports:
+       - "10053:19002"
+       - "10054:19003"
+       - "10055:19001"
+       - "10056:19000"
+    volumes:
+      - ./volumes/_app/frontend:/var/www/html
+    networks:
+      - app-network
+
+
+networks:
+  app-network:
+    driver: bridge
+
